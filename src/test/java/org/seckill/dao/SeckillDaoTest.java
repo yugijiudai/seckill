@@ -38,11 +38,14 @@ public class SeckillDaoTest {
         log.info("{}", seckill);
     }
 
+
+
+
     @Test
     public void queryAll() throws Exception {
         // java没有保存形参的记录  queryAll(int offset, int limit) ->  queryAll(int arg0, int arg1);
-        List<Seckill> seckills = seckillDao.queryAll(0, 100);
-        log.info("{}", seckills);
+        List<Seckill> secKills = seckillDao.queryAll(0, 100);
+        log.info("{}", secKills);
     }
 
 }
