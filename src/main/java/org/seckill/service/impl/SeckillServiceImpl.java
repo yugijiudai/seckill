@@ -13,7 +13,6 @@ import org.seckill.exception.SeckillCloseException;
 import org.seckill.exception.SeckillException;
 import org.seckill.service.SeckillService;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
@@ -22,6 +21,10 @@ import java.util.Date;
 import java.util.List;
 
 /**
+ * 这里发生的异常控制层就算抓住不抛出去,控制层不管有没有配置事务的情况下,这里的事务照样会回滚,在这个类的实现方法中，无论事务传播类型填什么,
+ * 例如:有a方法,b方法,c方法,他们都配置了事务,a方法调b方法和c方法,无论这三个方法哪一个失败,事务都会回滚!要想事务不回滚，只能在a,b,c对应的一个方法
+ * 改成调用另一个接口声明了事务的方法,而且传播属性还要是Propagation.REQUIRES_NEW
+ *
  * @author yugi
  * @apiNote
  * @since 2017-06-09
@@ -72,7 +75,8 @@ public class SeckillServiceImpl implements SeckillService {
 
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
+    // @Transactional(propagation = Propagation.REQUIRES_NEW)
     /*
      * 使用注解控制事务方法的优点:
      * 1:开发团队达成一致约定,明确标注事务方法的编程风格
@@ -100,6 +104,7 @@ public class SeckillServiceImpl implements SeckillService {
             }
             SuccessKilled successKilled = successKilledDao.queryByIdWithSeckill(seckillId, userPhone);
             return new SeckillExecutionDTO(seckillId, SeckillStateEnum.SUCCESS, successKilled);
+
         }
         catch (SeckillCloseException | RepeatKillException e1) {
             throw e1;

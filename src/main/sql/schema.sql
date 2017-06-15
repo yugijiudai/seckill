@@ -1,4 +1,4 @@
--- 数据库初始化脚本 http://www.imooc.com/learn/631
+-- 数据库初始化脚本 http://www.imooc.com/learn/632 http://m.phperz.com/article/16/0114/183078.html
 
 # 创建数据库
 -- CREATE DATABASE seckill;

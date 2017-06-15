@@ -48,4 +48,5 @@ public interface SeckillService {
     SeckillExecutionDTO executeSeckill(long seckillId, long userPhone, String md5);
     // SeckillExecutionDTO executeSeckill(long seckillId, long userPhone, String md5) throws SeckillException;
 
+
 }

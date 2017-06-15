@@ -45,7 +45,8 @@ public class SeckillServiceImplTest {
     //集成测试代码完整逻辑,注意可重复执行
     @Test
     public void testSeckillLogic() throws Exception {
-        long secKillId = 1001;
+        // 4acc607bc67f64352eddeb96e4b646fa
+        long secKillId = 1000;
         ExposerDTO exposerDTO = seckillServiceImpl.exportSeckillUrl(secKillId);
         log.info("exposerDTO:{}", exposerDTO);
         if (!exposerDTO.isExposed()) {
