@@ -62,6 +62,15 @@ public class SeckillServiceImplTest {
         }
     }
 
+    @Test
+    public void testExecuteSeckillProcedure() throws Exception {
+        long secKillId = 1000;
+        ExposerDTO exposerDTO = seckillServiceImpl.exportSeckillUrl(secKillId);
+        if (exposerDTO.isExposed()){
+            SeckillExecutionDTO seckillExecutionDTO = seckillServiceImpl.executeSeckillProcedure(secKillId, 13799999998L, exposerDTO.getMd5());
+            log.info("seckillExecutionDTO:{}", seckillExecutionDTO);
+        }
+    }
 
 
 }

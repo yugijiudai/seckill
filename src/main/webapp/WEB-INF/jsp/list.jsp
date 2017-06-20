@@ -9,6 +9,7 @@
    <%@include file="common/head.jsp" %>
    </head>
    <body>
+   ${sc}
       <%--页面显示部分--%>
    <div class="container">
       <div class="panel panel-default">

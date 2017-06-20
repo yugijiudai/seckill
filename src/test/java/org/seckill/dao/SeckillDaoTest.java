@@ -33,7 +33,7 @@ public class SeckillDaoTest {
 
     @Test
     public void queryById() throws Exception {
-        long id = 1000;
+        long id = 1001;
         Seckill seckill = seckillDao.queryById(id);
         log.info("{}", seckill);
     }

@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
@@ -92,6 +91,8 @@ public class SeckillController extends ExceptionController {
         }
         try {
             SeckillExecutionDTO executionDTO = seckillServiceImpl.executeSeckill(seckillId, userPhone, md5);
+            // 执行存储过程
+            // SeckillExecutionDTO executionDTO = seckillServiceImpl.executeSeckillProcedure(seckillId, userPhone, md5);
             // Integer.parseInt("cece"); //测试控制层事务回滚
             return new SeckillResult<>(true, executionDTO);
         }

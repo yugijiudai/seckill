@@ -10,7 +10,8 @@
 
     <!--配置整合mybatis过程-->
     <!--1.配置数据库相关参数properties的属性 -->
-    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true"/>
+
 
     <!--2.数据库连接池-->
     <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
@@ -50,6 +51,27 @@
         <!--给出需要扫描Dao接口包-->
         <property name="basePackage" value="org.seckill.dao"/>
     </bean>
+
+    <!--RedisDao-->
+    <!--<bean id="redisDao" class="org.seckill.dao.cache.RedisDao">-->
+    <!--<constructor-arg index="0" value="localhost"/>-->
+    <!--<constructor-arg index="1" value="6379"/>-->
+    <!--<constructor-arg index="2" value="3000"/>-->
+    <!--</bean>-->
+
+
+
+    <!--初始化jedis start-->
+    <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig"/>
+    <bean id="jedisPool" class="redis.clients.jedis.JedisPool">
+        <constructor-arg index="0" ref="jedisPoolConfig"/>
+        <constructor-arg index="1" value="${redis.uri}"/>
+        <constructor-arg index="2" value="${redis.port}"/>
+        <constructor-arg index="3" value="${redis.timeout}"/>
+    </bean>
+    <!--扫描cache包下所有使用注解的类型-->
+    <context:component-scan base-package="org.seckill.dao.cache"/>
+    <!--初始化jedis end-->
 
 
 </beans>

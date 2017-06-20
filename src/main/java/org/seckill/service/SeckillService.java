@@ -48,5 +48,14 @@ public interface SeckillService {
     SeckillExecutionDTO executeSeckill(long seckillId, long userPhone, String md5);
     // SeckillExecutionDTO executeSeckill(long seckillId, long userPhone, String md5) throws SeckillException;
 
+    /**
+     * 执行秒杀操作by存储过程
+     *
+     * @param seckillId 秒杀id
+     * @param userPhone 用户的电话
+     * @param md5       md5校验
+     * @return {@link SeckillExecutionDTO}
+     */
+    SeckillExecutionDTO executeSeckillProcedure(long seckillId, long userPhone, String md5);
 
 }

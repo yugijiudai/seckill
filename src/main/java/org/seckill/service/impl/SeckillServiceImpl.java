@@ -1,8 +1,10 @@
 package org.seckill.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.seckill.dao.SeckillDao;
 import org.seckill.dao.SuccessKilledDao;
+import org.seckill.dao.cache.RedisDao;
 import org.seckill.dto.ExposerDTO;
 import org.seckill.dto.SeckillExecutionDTO;
 import org.seckill.entity.Seckill;
@@ -18,7 +20,9 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 这里发生的异常控制层就算抓住不抛出去,控制层不管有没有配置事务的情况下,这里的事务照样会回滚,在这个类的实现方法中，无论事务传播类型填什么,
@@ -40,6 +44,9 @@ public class SeckillServiceImpl implements SeckillService {
     @Resource
     private SuccessKilledDao successKilledDao;
 
+    @Resource
+    private RedisDao redisDao;
+
     /**
      * md5盐值字符串,用于混淆MD5,随便写的
      */
@@ -57,9 +64,18 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Override
     public ExposerDTO exportSeckillUrl(long seckillId) {
-        Seckill seckill = this.getById(seckillId);
+        // 优化点:缓存优化,一致性维护:超时的基础上
+        // 1:访问redis
+        Seckill seckill = redisDao.getSeckill(seckillId);
         if (seckill == null) {
-            return new ExposerDTO(false, seckillId);
+            // 2:访问数据库
+            seckill = this.getById(seckillId);
+            if (seckill == null) {
+                return new ExposerDTO(false, seckillId);
+            }
+            // 3:放入redis
+            String putRedis = redisDao.putSeckill(seckill);
+            log.info("插入{}到redis:{}", seckill, putRedis);
         }
         long startTime = seckill.getStartTime().getTime();
         long endTime = seckill.getEndTime().getTime();
@@ -87,13 +103,8 @@ public class SeckillServiceImpl implements SeckillService {
     public SeckillExecutionDTO executeSeckill(long seckillId, long userPhone, String md5) {
         try {
             if (md5 == null || !this.getMD5(seckillId).equals(md5)) {
-                throw new SeckillException("seckill data rewrite");
-            }
-            // 减库存
-            int updateCount = seckillDao.reduceNumber(seckillId, new Date());
-            if (updateCount <= 0) {
-                // 没有更新到记录
-                throw new SeckillCloseException("seckill is closed");
+                // throw new SeckillException("seckill data rewrite");
+                return new SeckillExecutionDTO(seckillId, SeckillStateEnum.DATA_REWRITE);
             }
             // 记录购买行为
             int insertCount = successKilledDao.insertSuccessKilled(seckillId, userPhone);
@@ -102,6 +113,13 @@ public class SeckillServiceImpl implements SeckillService {
                 //重复秒杀
                 throw new RepeatKillException("seckill repeated");
             }
+            // 减库存,热点商品竞争
+            int updateCount = seckillDao.reduceNumber(seckillId, new Date());
+            if (updateCount <= 0) {
+                // 没有更新到记录,秒杀结束,rollback
+                throw new SeckillCloseException("seckill is closed");
+            }
+            // commit
             SuccessKilled successKilled = successKilledDao.queryByIdWithSeckill(seckillId, userPhone);
             return new SeckillExecutionDTO(seckillId, SeckillStateEnum.SUCCESS, successKilled);
 
@@ -116,6 +134,32 @@ public class SeckillServiceImpl implements SeckillService {
         }
     }
 
+    @Override
+    public SeckillExecutionDTO executeSeckillProcedure(long seckillId, long userPhone, String md5) {
+        if (md5 == null || !this.getMD5(seckillId).equals(md5)) {
+            return new SeckillExecutionDTO(seckillId, SeckillStateEnum.DATA_REWRITE);
+        }
+        Map<String, Object> map = new HashMap<>();
+        map.put("seckillId", seckillId);
+        map.put("phone", userPhone);
+        map.put("killTime", new Date());
+        map.put("result", null);
+        // 执行存储过程后,result被赋值
+        try {
+            seckillDao.killByProcedure(map);
+            // 获取result
+            Integer result = MapUtils.getInteger(map, "result", -2);
+            if (result == 1) {
+                SuccessKilled successKilled = successKilledDao.queryByIdWithSeckill(seckillId, userPhone);
+                return new SeckillExecutionDTO(seckillId, SeckillStateEnum.SUCCESS, successKilled);
+            }
+            return new SeckillExecutionDTO(seckillId, SeckillStateEnum.stateOf(result));
+        }
+        catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return new SeckillExecutionDTO(seckillId, SeckillStateEnum.INNER_ERROR);
+        }
+    }
 
     private String getMD5(long seckillId) {
         String base = seckillId + "/" + salt;
